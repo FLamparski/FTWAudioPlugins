@@ -2,22 +2,31 @@
 #include "IPlug_include_in_plug_src.h"
 
 WeirdOrgan::WeirdOrgan(const InstanceInfo& info)
-: Plugin(info, MakeConfig(kNumParams, 1))
+: Plugin(info, MakeConfig(kNumParams, 1)), mBandParams()
 {
-  InitParamRange(0, kNumParams-1, 1, "Param %i", 0., 0., 1., 0.01, "", IParam::kFlagsNone); // initialize kNumParams generic iplug params
-  
 #if IPLUG_DSP
   mFaustProcessor.SetMaxChannelCount(MaxNChannels(ERoute::kInput), MaxNChannels(ERoute::kOutput));
   mFaustProcessor.Init();
   mFaustProcessor.CompileCPP();
   mFaustProcessor.SetAutoRecompile(true);
- // mFaustProcessor.CreateIPlugParameters(this, 0, mFaustProcessor.NParams()); // in order to create iplug params, based on faust .dsp params, uncomment this
 #ifndef FAUST_COMPILED
   mFaustProcessor.SetCompileFunc([&](){
     OnParamReset(EParamSource::kRecompile);
   });
 #endif
 #endif
+
+  mFaustProcessor.CreateIPlugParameters(this, 0, mFaustProcessor.NParams());
+  pushBandParams(0);
+  pushBandParams(1);
+  pushBandParams(2);
+  pushBandParams(4);
+  pushBandParams(6);
+  pushBandParams(8);
+  pushBandParams(10);
+  pushBandParams(12);
+  pushBandParams(14);
+  pushBandParams(16);
   
 #if IPLUG_EDITOR
   mMakeGraphicsFunc = [&]() {
@@ -27,21 +36,70 @@ WeirdOrgan::WeirdOrgan(const InstanceInfo& info)
   mLayoutFunc = [&](IGraphics* pGraphics) {
     IRECT b = pGraphics->GetBounds().GetPadded(-20);
 
-    IRECT knobs = b.GetFromTop(100.);
-    IRECT viz = b.GetReducedFromTop(100);
+    IRECT viz = b.GetReducedFromTop(400);
     IRECT keyb = viz.ReduceFromBottom(100);
     pGraphics->AttachCornerResizer(EUIResizerMode::Scale);
     pGraphics->LoadFont("Roboto-Regular", ROBOTO_FN);
     pGraphics->AttachPanelBackground(COLOR_GRAY);
 
-    for (int i = 0; i < kNumParams; i++) {
-      pGraphics->AttachControl(new IVKnobControl(knobs.GetGridCell(i, 1, kNumParams).GetPadded(-5.f), i));
+    IRECT bandControls = b.GetFromTop(300);
+    for (auto band = 0; band < mBandParams.size(); band++) {
+        auto &bandParamIds = mBandParams.at(band);
+        IRECT bandStrip = b.GetGridCell(0, band, 1, mBandParams.size());
+        IRECT slider = bandStrip.ReduceFromTop(150);
+        pGraphics->AttachControl(new IVSliderControl(slider, bandParamIds.gain, "Gain"));
+        IRECT envKnobs = bandStrip.ReduceFromTop(250);
+        pGraphics->AttachControl(new IVKnobControl(envKnobs.GetGridCell(0, 0, 4, 1), bandParamIds.attack, "Attack"));
+        pGraphics->AttachControl(new IVKnobControl(envKnobs.GetGridCell(1, 0, 4, 1), bandParamIds.decay, "Decay"));
+        pGraphics->AttachControl(new IVKnobControl(envKnobs.GetGridCell(2, 0, 4, 1), bandParamIds.sustain, "Sustain"));
+        pGraphics->AttachControl(new IVKnobControl(envKnobs.GetGridCell(3, 0, 4, 1), bandParamIds.release, "Release"));
     }
     
     pGraphics->AttachControl(new IVScopeControl<2>(viz, "", DEFAULT_STYLE.WithColor(kBG, COLOR_BLACK).WithColor(kFG, COLOR_GREEN)), kCtrlTagScope);
     pGraphics->AttachControl(new IVKeyboardControl(keyb));
   };
 #endif
+}
+
+void WeirdOrgan::pushBandParams(int bandId)
+{
+    std::string gainName = "partial gain " + std::to_string(bandId);
+    std::string attackName = "attack " + std::to_string(bandId);
+    std::string decayName = "decay " + std::to_string(bandId);
+    std::string sustainName = "sustain " + std::to_string(bandId);
+    std::string releaseName = "release " + std::to_string(bandId);
+
+    int gainId = -1;
+    int attackId = -1;
+    int decayId = -1;
+    int sustainId = -1;
+    int releaseId = -1;
+    
+    for (int i = 0; i < NParams(); i++) {
+        auto name = GetParam(i)->GetName();
+        if (gainName.compare(name) == 0) {
+            gainId = i;
+            continue;
+        }
+        if (attackName.compare(name) == 0) {
+            attackId = i;
+            continue;
+        }
+        if (decayName.compare(name) == 0) {
+            decayId = i;
+            continue;
+        }
+        if (sustainName.compare(name) == 0) {
+            sustainId = i;
+            continue;
+        }
+        if (releaseName.compare(name) == 0) {
+            releaseId = i;
+            continue;
+        }
+    }
+
+    mBandParams.emplace_back(gainId, attackId, decayId, sustainId, releaseId);
 }
 
 #if IPLUG_DSP
