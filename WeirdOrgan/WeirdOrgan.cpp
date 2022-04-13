@@ -43,17 +43,25 @@ WeirdOrgan::WeirdOrgan(const InstanceInfo& info)
     pGraphics->AttachPanelBackground(COLOR_GRAY);
 
     IRECT bandControls = b.GetFromTop(300);
-    for (auto band = 0; band < mBandParams.size(); band++) {
+    auto nBands = mBandParams.size();
+    auto nColumns = nBands + 1;
+    for (auto band = 0; band < nBands; band++) {
         auto &bandParamIds = mBandParams.at(band);
-        IRECT bandStrip = b.GetGridCell(0, band, 1, mBandParams.size());
+        IRECT bandStrip = b.GetGridCell(0, band, 1, nColumns);
         IRECT slider = bandStrip.ReduceFromTop(150);
-        pGraphics->AttachControl(new IVSliderControl(slider, bandParamIds.gain, "Gain"));
+        pGraphics->AttachControl(new IVSliderControl(slider, bandParamIds.gain, "Level"));
         IRECT envKnobs = bandStrip.ReduceFromTop(250);
         pGraphics->AttachControl(new IVKnobControl(envKnobs.GetGridCell(0, 0, 4, 1), bandParamIds.attack, "Attack"));
         pGraphics->AttachControl(new IVKnobControl(envKnobs.GetGridCell(1, 0, 4, 1), bandParamIds.decay, "Decay"));
         pGraphics->AttachControl(new IVKnobControl(envKnobs.GetGridCell(2, 0, 4, 1), bandParamIds.sustain, "Sustain"));
         pGraphics->AttachControl(new IVKnobControl(envKnobs.GetGridCell(3, 0, 4, 1), bandParamIds.release, "Release"));
     }
+
+    IRECT outControls = b.GetGridCell(0, nBands, 1, nColumns);
+    IRECT slider = outControls.ReduceFromTop(200);
+    pGraphics->AttachControl(new IVSliderControl(slider, kParamVolume, "Volume"));
+    IRECT qKnob = outControls.ReduceFromTop(100);
+    pGraphics->AttachControl(new IVKnobControl(qKnob, kParamQ, "Q"));
     
     pGraphics->AttachControl(new IVScopeControl<2>(viz, "", DEFAULT_STYLE.WithColor(kBG, COLOR_BLACK).WithColor(kFG, COLOR_GREEN)), kCtrlTagScope);
     pGraphics->AttachControl(new IVKeyboardControl(keyb));

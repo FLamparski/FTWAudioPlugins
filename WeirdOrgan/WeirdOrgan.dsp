@@ -7,7 +7,7 @@ freq = hslider("freq[hidden:1]",200,50,1000,0.01);
 gain = hslider("gain[hidden:1]",0.5,0,1,0.01);
 gate = button("gate[hidden:1]");
 
-q = hslider("q", 20, 2, 40, 1);
+q = hslider("q", 20, 2, 40, 0.1);
 qcomp = 0.5 - 0.025 * q; // Decrease levels at high Q settings
 
 resonbp2x(freq, q) = _ : fi.resonbp(freq, q, 0.5) : fi.resonbp(freq, q, 0.5) : _;
@@ -26,16 +26,16 @@ with {
 };
 
 tonalizer(freq, q) = _ <:
-    vgroup("[0]H", band(0, freq / 2, q, vslider("partial gain 0", 0.5, 0.0, 1.0, 0.01))),
-    vgroup("[1]F", band(1, freq, q, vslider("partial gain 1", 1, 0.0, 1.0, 0.01))),
-    vgroup("[2]2", band(2, freq * 2, q, vslider("partial gain 2", 0.25, 0.0, 1.0, 0.01))),
-    vgroup("[3]4", band(4, freq * 4, q, vslider("partial gain 4", 0.25, 0.0, 1.0, 0.01))),
-    vgroup("[4]6", band(6, freq * 6, q, vslider("partial gain 6", 0.25, 0.0, 1.0, 0.01))),
-    vgroup("[5]8", band(8, freq * 8, q, vslider("partial gain 8", 0.25, 0.0, 1.0, 0.01))),
-    vgroup("[6]10", band(10, freq * 10, q, vslider("partial gain 10", 0.25, 0.0, 1.0, 0.01))),
-    vgroup("[7]12", band(12, freq * 12, q, vslider("partial gain 12", 0.25, 0.0, 1.0, 0.01))),
-    vgroup("[8]14", band(14, freq * 14, q, vslider("partial gain 14", 0.1, 0.0, 1.0, 0.01))),
-    vgroup("[9]16", band(16, freq * 16, q, vslider("partial gain 16", 0.1, 0.0, 1.0, 0.01)))
+    band(0, freq / 2, q, vslider("partial gain 0", 0.5, 0.0, 1.0, 0.01)),
+    band(1, freq, q, vslider("partial gain 1", 1, 0.0, 1.0, 0.01)),
+    band(2, freq * 2, q, vslider("partial gain 2", 0.25, 0.0, 1.0, 0.01)),
+    band(4, freq * 4, q, vslider("partial gain 4", 0.25, 0.0, 1.0, 0.01)),
+    band(6, freq * 6, q, vslider("partial gain 6", 0.25, 0.0, 1.0, 0.01)),
+    band(8, freq * 8, q, vslider("partial gain 8", 0.25, 0.0, 1.0, 0.01)),
+    band(10, freq * 10, q, vslider("partial gain 10", 0.25, 0.0, 1.0, 0.01)),
+    band(12, freq * 12, q, vslider("partial gain 12", 0.25, 0.0, 1.0, 0.01)),
+    band(14, freq * 14, q, vslider("partial gain 14", 0.1, 0.0, 1.0, 0.01)),
+    band(16, freq * 16, q, vslider("partial gain 16", 0.1, 0.0, 1.0, 0.01))
     :> /(12);
 
-process = no.noise : hgroup("", tonalizer(freq, q)) * gain * hslider("volume", 0.5, 0, 1, 0.01) <: _, _;
+process = no.noise : tonalizer(freq, q) * gain * hslider("volume", 0.5, 0, 1, 0.01) <: _, _;
